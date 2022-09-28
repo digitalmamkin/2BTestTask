@@ -14,6 +14,7 @@ trait cupofjo
     static private ?string $log_channel = 'cupofjo';
     static private ?string $url = 'https://cupofjo.com/';
     static private ?int $post_limit;
+    static private ?bool $limit_researched = false;
 
     public static function run($only_posts, $post_limit){
         static::$post_limit = $post_limit;
@@ -26,6 +27,9 @@ trait cupofjo
             // Scrape posts in every category;
             foreach($categories_urls as $category_url){
                 static::scrapePostsURLs($category_url);
+                if(static::$limit_researched){
+                    break;
+                }
             }
         }
 
@@ -71,7 +75,7 @@ trait cupofjo
         // Posts;
         $posts = $html_posts->findMulti('article');
         Log::channel(static::$log_channel)->info('Post count on first page: '.count($posts));
-        $posts_ids = static::postsConveyor($posts);
+        $posts_ids = static::postsConveyor($posts, []);
 
         // Scrape other posts from ajax pages;
         $ajax_handler = true;
@@ -90,13 +94,15 @@ trait cupofjo
 
             if(static::$post_limit > 0 && count($posts_ids) >= static::$post_limit){
                 Log::channel(static::$log_channel)->info('Post limit researched...');
+                static::$limit_researched = true;
                 $ajax_handler = false;
             }
 
             $html_posts = HtmlDomParser::str_get_html($next_posts_html);
             $posts = $html_posts->findMulti('article');
+
             Log::channel(static::$log_channel)->info('Posts count from '.$temp_key.' page: '.count($posts));
-            $new_posts_ids = static::postsConveyor($posts);
+            $new_posts_ids = static::postsConveyor($posts, $posts_ids);
             $posts_ids = array_merge($posts_ids, $new_posts_ids);
 
             $temp_key++;
@@ -107,9 +113,14 @@ trait cupofjo
     }
 
     // Small conveyor;
-    private static function postsConveyor($posts){
+    private static function postsConveyor($posts, $exist_posts_ids){
         $posts_ids = [];
-        foreach($posts as $post_item){
+        foreach($posts as $key => $post_item){
+            if(count($exist_posts_ids) + $key >= static::$post_limit){
+                static::$limit_researched = true;
+                break;
+            }
+
             $posts_ids[] = $post_item->getAttribute('id');
             $url = $post_item->find('a', 0)->getAttribute('href');
 
@@ -141,11 +152,6 @@ trait cupofjo
             ->get();
 
         foreach($posts as $key => $post){
-            if(static::$post_limit > 0 && $key + 1 == static::$post_limit){
-                Log::channel(static::$log_channel)->info('Post limit researched...');
-                break;
-            }
-
             Log::channel(static::$log_channel)->info('Researching post: '.$post->url);
 
             $html = HtmlDomParser::str_get_html(file_get_contents($post->url));
@@ -161,6 +167,11 @@ trait cupofjo
             $post->save();
 
             Log::channel(static::$log_channel)->info('Post is ready');
+
+            if(static::$post_limit > 0 && $key == static::$post_limit){
+                Log::channel(static::$log_channel)->info('Post limit researched...');
+                break;
+            }
         }
     }
 

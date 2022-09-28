@@ -30,6 +30,7 @@ trait adamenfroy
             $last_page = explode('/', $last_page_url);
             $last_page = Arr::last($last_page);
 
+            $post_counter = 0;
             for($i = 1 ; $i <= $last_page ; $i++){
                 Log::channel(static::$log_channel)->info('Scrapping page: '.$i);
 
@@ -37,10 +38,10 @@ trait adamenfroy
 
                 // Posts on the page;
                 $posts = $html->findMulti('a[itemprop="mainEntityOfPage"]');
-                foreach($posts as $key => $post_item){
-                    if(static::$post_limit > 0 && $key + 1 == static::$post_limit){
+                foreach($posts as $post_item){
+                    if(static::$post_limit > 0 && $post_counter == static::$post_limit){
                         Log::channel(static::$log_channel)->info('Post limit researched...');
-                        break;
+                        break 2;
                     }
 
                     $url = $post_item->getAttribute('href');
@@ -59,6 +60,8 @@ trait adamenfroy
                     }   else{
                         Log::channel(static::$log_channel)->info('Exist posts was skipped: '.$url);
                     }
+
+                    $post_counter++;
                 }
 
                 Log::channel(static::$log_channel)->info('Page: '.$i.' successfully scraped.');
@@ -81,7 +84,7 @@ trait adamenfroy
             ->get();
 
         foreach($posts as $key => $post){
-            if(static::$post_limit > 0 && $key + 1 == static::$post_limit){
+            if(static::$post_limit > 0 && $key == static::$post_limit){
                 Log::channel(static::$log_channel)->info('Post limit researched...');
                 break;
             }

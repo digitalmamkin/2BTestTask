@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
     {
         Schema::disableForeignKeyConstraints();
 
+        // Posts;
+        DB::table('posts')->truncate();
         // Blogs;
         DB::table('blogs')->truncate();
         $this->call(Blogs::class);

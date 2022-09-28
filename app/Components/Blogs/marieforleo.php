@@ -26,6 +26,7 @@ trait marieforleo
 
             Log::channel(static::$log_channel)->info('Script got '.count($categories).' categories');
 
+            $posts_counter = 0;
             foreach($categories as $category){
                 $cat_url = $category->getAttribute('href');
 
@@ -38,10 +39,10 @@ trait marieforleo
 
                 Log::channel(static::$log_channel)->info('Category have '.count($posts).' posts');
 
-                foreach($posts as $key => $post_item){
-                    if(static::$post_limit > 0 && $key + 1 == static::$post_limit){
+                foreach($posts as $post_item){
+                    if(static::$post_limit > 0 && $posts_counter == static::$post_limit){
                         Log::channel(static::$log_channel)->info('Post limit researched...');
-                        break;
+                        break 2;
                     }
 
                     $url = static::$url.$post_item->getAttribute('href');
@@ -60,6 +61,8 @@ trait marieforleo
                     }   else{
                         Log::channel(static::$log_channel)->info('Exist posts was skipped: '.$url);
                     }
+
+                    $posts_counter++;
                 }
 
                 Log::channel(static::$log_channel)->info('Scrapping category successfully finished.');
@@ -82,7 +85,7 @@ trait marieforleo
             ->get();
 
         foreach($posts as $key => $post){
-            if(static::$post_limit > 0 && $key + 1 == static::$post_limit){
+            if(static::$post_limit > 0 && $key == static::$post_limit){
                 Log::channel(static::$log_channel)->info('Post limit researched...');
                 break;
             }

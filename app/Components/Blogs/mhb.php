@@ -22,7 +22,12 @@ trait mhb
             $html = HtmlDomParser::str_get_html(file_get_contents(static::$url));
 
             $posts = $html->findMulti('article > a');
-            foreach($posts as $post){
+            foreach($posts as $key => $post){
+                if(static::$post_limit > 0 && $key == static::$post_limit){
+                    Log::channel(static::$log_channel)->info('Post limit researched...');
+                    break;
+                }
+
                 $url = $post->getAttribute('href');
 
                 $exist_post = Post::where('blog_id', static::$blog_id)
@@ -58,7 +63,7 @@ trait mhb
             ->get();
 
         foreach($posts as $key => $post){
-            if(static::$post_limit > 0 && $key + 1 == static::$post_limit){
+            if(static::$post_limit > 0 && $key == static::$post_limit){
                 Log::channel(static::$log_channel)->info('Post limit researched...');
                 break;
             }
